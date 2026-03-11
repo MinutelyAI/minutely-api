@@ -1,0 +1,25 @@
+# Secrets and Environment Variables
+.env
+.env.local
+
+# Compiled Go Binaries
+/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+minutely-api
+
+# Editor and IDE configurations
+.vscode/
+.idea/
+
+# OS Specific generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
