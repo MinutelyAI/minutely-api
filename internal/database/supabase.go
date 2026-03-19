@@ -8,7 +8,7 @@ import (
 	"github.com/nedpals/supabase-go"
 )
 
-// SupaClient is a global variable so other parts of your app can use the database
+// SupaClient is a global variable so other parts of the app can use the database
 var SupaClient *supabase.Client
 
 // InitSupabase loads the .env file and sets up the connection

@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	// Make sure this path matches your actual module name from your go.mod file!
-	"github.com/MinutelyAI/minutely-api/internal/database" 
+	"github.com/MinutelyAI/minutely-api/internal/database"
+	"github.com/MinutelyAI/minutely-api/internal/handlers"
 )
 
 type Response struct {
@@ -23,19 +23,23 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// 1. Initialize Supabase right when the app starts
+	// Initialize Supabase
 	err := database.InitSupabase()
 	if err != nil {
-		// If it fails, the server will crash and print the error
 		log.Fatalf("Database Error: %v", err) 
 	}
 
-	// 2. Start the server (same as before)
+	// Register API routes
 	http.HandleFunc("/api/health", healthCheck)
+	
+	// Add the new Authentication routes
+	http.HandleFunc("/api/auth/signup", handlers.SignUp)
+	http.HandleFunc("/api/auth/login", handlers.Login)
+
 	port := "8080"
 	address := "127.0.0.1:" + port
 
-	fmt.Printf("Starting Minutely backend securely on http://%s\n", address)
+	fmt.Printf("Starting backend securely on http://%s\n", address)
 
 	if err := http.ListenAndServe(address, nil); err != nil {
 		log.Fatalf("Server failed to start: %v\n", err)
