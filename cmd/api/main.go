@@ -36,6 +36,9 @@ func main() {
 	http.HandleFunc("/api/auth/signup", handlers.SignUp)
 	http.HandleFunc("/api/auth/login", handlers.Login)
 
+	// Protected Routes (Wrapped in the RequireAuth middleware)
+	http.HandleFunc("/api/user/profile", handlers.RequireAuth(handlers.GetProfile))
+
 	port := "8080"
 	address := "127.0.0.1:" + port
 
