@@ -7,6 +7,7 @@ import (
 
 	"github.com/MinutelyAI/minutely-api/internal/database"
 	"github.com/nedpals/supabase-go"
+	"fmt"
 )
 
 
@@ -31,6 +32,8 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Invalid request body"}`, http.StatusBadRequest)
 		return
 	}
+
+	fmt.Println("➡️ Login attempt received for:", req.Email)
 
 	// Send credentials to Supabase
 	ctx := context.Background()
@@ -75,9 +78,16 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusUnauthorized)
-		return
-	}
+			// 1. Print it to the terminal so YOU can see it
+			fmt.Println("🚨 SUPABASE LOGIN ERROR:", err)
+
+			// 2. Safely format it as JSON for Postman
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": err.Error(),
+			})
+			return
+		}
 
 	// Return the session token to Electron so it can prove the user is logged in
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -85,4 +95,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		"access_token": session.AccessToken,
 		"user_id":      session.User.ID,
 	})
+}
+
+// GetProfile is a protected route that only logged-in users can access
+func GetProfile(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	
+	// If the code reaches this point, we know they are 100% authenticated.
+	w.Write([]byte(`{"status": "success", "message": "Welcome to your private dashboard!"}`))
 }
