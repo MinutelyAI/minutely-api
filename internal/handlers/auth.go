@@ -8,6 +8,7 @@ import (
 	"github.com/MinutelyAI/minutely-api/internal/database"
 	"github.com/nedpals/supabase-go"
 	"fmt"
+	"strings"
 )
 
 
@@ -103,4 +104,55 @@ func GetProfile(w http.ResponseWriter, r *http.Request) {
 	
 	// If the code reaches this point, we know they are 100% authenticated.
 	w.Write([]byte(`{"status": "success", "message": "Welcome to your private dashboard!"}`))
+}
+
+// Logout invalidates the user's session in Supabase
+func Logout(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "application/json")
+
+	// Handle CORS preflight
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	// 1. Grab the token from the header
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		http.Error(w, `{"error": "Unauthorized: Missing token"}`, http.StatusUnauthorized)
+		return
+	}
+
+	// 2. Isolate the actual token string
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		http.Error(w, `{"error": "Unauthorized: Invalid token format"}`, http.StatusUnauthorized)
+		return
+	}
+	token := parts[1]
+
+	// 3. Tell Supabase to invalidate this specific session
+	ctx := context.Background()
+	err := database.SupaClient.Auth.SignOut(ctx, token)
+	
+	if err != nil {
+		fmt.Println("🚨 SUPABASE LOGOUT ERROR:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to log out: " + err.Error(),
+		})
+		return
+	}
+
+	// 4. Send success response
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":  "success",
+		"message": "Successfully logged out",
+	})
 }
