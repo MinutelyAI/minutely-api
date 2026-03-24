@@ -46,6 +46,18 @@ func main() {
 	http.HandleFunc("/api/meetings/instant", handlers.RequireAuth(handlers.StartInstantMeeting))
 	http.HandleFunc("/api/meetings/recent", handlers.RequireAuth(handlers.GetRecentMeetings))
 
+	// Theme Routes (Protected by Auth)
+	http.HandleFunc("/api/preferences/theme", handlers.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handlers.GetTheme(w, r)
+		case http.MethodPost:
+			handlers.SaveTheme(w, r)
+		default:
+			http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		}
+	}))
+
 	port := "8080"
 	address := "127.0.0.1:" + port
 
