@@ -41,6 +41,11 @@ func main() {
 	// Logout route (also protected)
 	http.HandleFunc("/api/auth/logout", handlers.Logout)
 
+	// Dashboard / Meeting Routes (Protected by Auth)
+	http.HandleFunc("/api/meetings/next", handlers.RequireAuth(handlers.GetNextMeeting))
+	http.HandleFunc("/api/meetings/instant", handlers.RequireAuth(handlers.StartInstantMeeting))
+	http.HandleFunc("/api/meetings/recent", handlers.RequireAuth(handlers.GetRecentMeetings))
+
 	port := "8080"
 	address := "127.0.0.1:" + port
 

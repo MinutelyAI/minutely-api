@@ -45,6 +45,12 @@ func RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		// Inject the user's ID into the request context so meetings.go can read it!
+		ctxWithUser := context.WithValue(r.Context(), UserIDKey, user.ID)
+		
+		// Pass the request (with the NEW context) to the next handler
+		next.ServeHTTP(w, r.WithContext(ctxWithUser))
+
+		//next.ServeHTTP(w, r)
 	}
 }
