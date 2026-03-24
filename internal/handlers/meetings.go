@@ -102,6 +102,7 @@ func StartInstantMeeting(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GetRecentMeetings fetches the user's past completed meetings
 func GetRecentMeetings(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
