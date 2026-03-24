@@ -64,6 +64,7 @@ func GetNextMeeting(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// StartInstantMeeting creates a new active meeting immediately
 func StartInstantMeeting(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
