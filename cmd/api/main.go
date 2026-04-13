@@ -58,6 +58,11 @@ func main() {
 		}
 	}))
 
+	// Schedule Meeting Routes
+	http.HandleFunc("/api/meetings/schedule", handlers.RequireAuth(handlers.CreateScheduledMeeting))
+	http.HandleFunc("/api/meetings/schedule/update", handlers.RequireAuth(handlers.UpdateScheduledMeeting))
+	http.HandleFunc("/api/meetings/schedule/cancel", handlers.RequireAuth(handlers.CancelScheduledMeeting))
+
 	port := "8080"
 	address := "127.0.0.1:" + port
 
