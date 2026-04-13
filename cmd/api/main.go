@@ -43,7 +43,6 @@ func main() {
 
 	// Dashboard / Meeting Routes (Protected by Auth)
 	http.HandleFunc("/api/meetings/next", handlers.RequireAuth(handlers.GetNextMeeting))
-	http.HandleFunc("/api/meetings/instant", handlers.RequireAuth(handlers.StartInstantMeeting))
 	http.HandleFunc("/api/meetings/recent", handlers.RequireAuth(handlers.GetRecentMeetings))
 
 	// Theme Routes (Protected by Auth)
@@ -62,6 +61,10 @@ func main() {
 	http.HandleFunc("/api/meetings/schedule", handlers.RequireAuth(handlers.CreateScheduledMeeting))
 	http.HandleFunc("/api/meetings/schedule/update", handlers.RequireAuth(handlers.UpdateScheduledMeeting))
 	http.HandleFunc("/api/meetings/schedule/cancel", handlers.RequireAuth(handlers.CancelScheduledMeeting))
+
+	// Instant Meetings
+	http.HandleFunc("/api/meetings/instant", handlers.RequireAuth(handlers.CreateInstantMeeting))
+	http.HandleFunc("/api/meetings/end", handlers.RequireAuth(handlers.EndInstantMeeting))
 
 	port := "8080"
 	address := "127.0.0.1:" + port
