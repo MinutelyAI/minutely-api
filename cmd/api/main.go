@@ -26,12 +26,12 @@ func main() {
 	// Initialize Supabase
 	err := database.InitSupabase()
 	if err != nil {
-		log.Fatalf("Database Error: %v", err) 
+		log.Fatalf("Database Error: %v", err)
 	}
 
 	// Register API routes
 	http.HandleFunc("/api/health", healthCheck)
-	
+
 	// Add the new Authentication routes
 	http.HandleFunc("/api/auth/signup", handlers.SignUp)
 	http.HandleFunc("/api/auth/login", handlers.Login)
@@ -65,6 +65,9 @@ func main() {
 	// Instant Meetings
 	http.HandleFunc("/api/meetings/instant", handlers.RequireAuth(handlers.CreateInstantMeeting))
 	http.HandleFunc("/api/meetings/end", handlers.RequireAuth(handlers.EndInstantMeeting))
+
+	// Join Meeting Validation
+	http.HandleFunc("/api/meetings/validate", handlers.RequireAuth(handlers.ValidateMeeting))
 
 	port := "8080"
 	address := "127.0.0.1:" + port
