@@ -69,6 +69,9 @@ func main() {
 	// Join Meeting Validation
 	http.HandleFunc("/api/meetings/validate", handlers.RequireAuth(handlers.ValidateMeeting))
 
+	// Media State Sync
+	http.HandleFunc("/api/meetings/participant/state", handlers.RequireAuth(handlers.UpdateMediaState))
+
 	port := "8080"
 	address := "127.0.0.1:" + port
 
