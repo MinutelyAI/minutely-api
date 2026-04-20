@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/MinutelyAI/minutely-api/internal/database"
 	"github.com/MinutelyAI/minutely-api/internal/handlers"
@@ -84,13 +85,22 @@ func main() {
 	mux.HandleFunc("/api/meetings/end", handlers.RequireAuth(handlers.EndInstantMeeting))
 
 	// Join Meeting Validation
-	mux.HandleFunc("/api/meetings/validate", handlers.RequireAuth(handlers.ValidateMeeting))
+	mux.HandleFunc("/api/meetings/validate", handlers.ValidateMeeting)
 
 	// Media State Sync
 	mux.HandleFunc("/api/meetings/participant/state", handlers.RequireAuth(handlers.UpdateMediaState))
+	mux.HandleFunc("/api/meetings/participants", handlers.RequireAuth(handlers.GetMeetingParticipants))
+
+	// WebRTC Signaling (protected)
+	mux.HandleFunc("/api/webrtc/signal", handlers.RequireAuth(handlers.SendWebRTCSignal))
+	mux.HandleFunc("/api/webrtc/signals", handlers.RequireAuth(handlers.PollWebRTCSignals))
 
 	port := "8080"
-	address := "127.0.0.1:" + port
+	host := os.Getenv("BACKEND_HOST")
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	address := host + ":" + port
 
 	fmt.Printf("Starting backend securely on http://%s\n", address)
 

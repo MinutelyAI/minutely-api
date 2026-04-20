@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"fmt"
 
 	"github.com/MinutelyAI/minutely-api/internal/database"
 )
@@ -23,9 +24,15 @@ func ValidateMeeting(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var results []map[string]interface{}
-	err := database.SupaClient.DB.From("meetings").Select("id, title, status, scheduled_for").Eq("id", meetingID).Execute(&results)
+	err := database.SupaClient.DB.From("meetings").Select("id,title,status,scheduled_for").Eq("id", meetingID).Execute(&results)
 
-	if err != nil || len(results) == 0 {
+	if err != nil {
+		fmt.Println("🚨 SUPABASE VALIDATE MEETING ERROR:", err)
+		http.Error(w, `{"error": "Failed to validate meeting"}`, http.StatusInternalServerError)
+		return
+	}
+
+	if len(results) == 0 {
 		http.Error(w, `{"error": "Invalid meeting link or meeting does not exist"}`, http.StatusNotFound)
 		return
 	}

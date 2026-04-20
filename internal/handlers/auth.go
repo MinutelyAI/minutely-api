@@ -94,6 +94,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":       "success",
 		"access_token": session.AccessToken,
+		"token":        session.AccessToken,
 		"user_id":      session.User.ID,
 	})
 }
