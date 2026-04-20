@@ -44,8 +44,8 @@ func CreateInstantMeeting(w http.ResponseWriter, r *http.Request) {
 	meetingID := meeting["id"].(string)
 
 	// 2. Generate shareable Join Link & Code
-	// We use the meeting ID as the unique room code for the frontend React Router
-	joinLink := fmt.Sprintf("http://localhost:3000/#/join/%s", meetingID)
+	// The meeting ID is the shared join identifier for the participant flow.
+	joinLink := fmt.Sprintf("http://localhost:3000/join/%s", meetingID)
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message":   "Instant meeting started",
