@@ -143,12 +143,9 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	err := database.SupaClient.Auth.SignOut(ctx, token)
 	
 	if err != nil {
-		fmt.Println("🚨 SUPABASE LOGOUT ERROR:", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "Failed to log out: " + err.Error(),
-		})
-		return
+		fmt.Println("⚠️ SUPABASE LOGOUT ERROR (ignoring):", err)
+		// We ignore the error because if the token is already expired or invalid,
+		// the user is effectively logged out anyway. Returning 500 breaks the frontend.
 	}
 
 	// 4. Send success response
