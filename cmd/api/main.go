@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/MinutelyAI/minutely-api/internal/database"
 	"github.com/MinutelyAI/minutely-api/internal/handlers"
@@ -94,6 +95,25 @@ func main() {
 	// WebRTC Signaling (protected)
 	mux.HandleFunc("/api/webrtc/signal", handlers.RequireAuth(handlers.SendWebRTCSignal))
 	mux.HandleFunc("/api/webrtc/signals", handlers.RequireAuth(handlers.PollWebRTCSignals))
+	
+	// Transcription & AI Intelligence
+	mux.HandleFunc("/api/v1/meetings/", handlers.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+		switch {
+		case strings.HasSuffix(path, "/transcription/start"):
+			handlers.StartTranscriptionSession(w, r)
+		case strings.HasSuffix(path, "/transcription/end"):
+			handlers.EndTranscriptionSession(w, r)
+		case strings.HasSuffix(path, "/transcription/ws"):
+			handlers.HandleTranscriptionWebSocket(w, r)
+		case strings.HasSuffix(path, "/transcript"):
+			handlers.GetMeetingTranscript(w, r)
+		case strings.HasSuffix(path, "/ai-insights"):
+			handlers.GetMeetingInsights(w, r)
+		default:
+			http.Error(w, `{"error": "Not found"}`, http.StatusNotFound)
+		}
+	}))
 
 	port := "8080"
 	host := os.Getenv("BACKEND_HOST")
