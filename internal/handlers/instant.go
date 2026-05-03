@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/MinutelyAI/minutely-api/internal/database"
+	"github.com/google/uuid"
 )
 
 type EndMeetingReq struct {
@@ -22,26 +23,29 @@ func CreateInstantMeeting(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := r.Context().Value(UserIDKey).(string)
+	token := r.Context().Value(AuthTokenKey).(string)
+	authClient := database.CreateAuthenticatedClient(token)
 
 	// Generate a dynamic title
 	title := fmt.Sprintf("Instant Meeting - %s", time.Now().Format("Jan 02, 3:04 PM"))
+	meetingID := uuid.New().String()
 
-	// 1. Insert the meeting as 'in_progress'
-	var insertedMeetings []map[string]interface{}
-	err := database.SupaClient.DB.From("meetings").Insert(map[string]interface{}{
+	meetingData := map[string]interface{}{
+		"id":      meetingID,
 		"user_id": userID,
 		"title":   title,
 		"status":  "in_progress",
-	}).Execute(&insertedMeetings)
+	}
 
-	if err != nil || len(insertedMeetings) == 0 {
+	// 1. Insert the meeting as 'in_progress'
+	var insertedMeetings []map[string]interface{}
+	err := authClient.DB.From("meetings").Insert(meetingData).Execute(&insertedMeetings)
+
+	if err != nil {
 		fmt.Println("🚨 SUPABASE INSTANT MEETING ERROR:", err)
 		http.Error(w, `{"error": "Failed to start meeting"}`, http.StatusInternalServerError)
 		return
 	}
-
-	meeting := insertedMeetings[0]
-	meetingID := meeting["id"].(string)
 
 	// 2. Generate shareable Join Link & Code
 	// The meeting ID is the shared join identifier for the participant flow.
@@ -49,7 +53,7 @@ func CreateInstantMeeting(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message":   "Instant meeting started",
-		"meeting":   meeting,
+		"meeting":   meetingData,
 		"join_code": meetingID,
 		"join_link": joinLink,
 	})
@@ -64,6 +68,8 @@ func EndInstantMeeting(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := r.Context().Value(UserIDKey).(string)
+	token := r.Context().Value(AuthTokenKey).(string)
+	authClient := database.CreateAuthenticatedClient(token)
 	var req EndMeetingReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ID == "" {
 		http.Error(w, `{"error": "Meeting ID is required"}`, http.StatusBadRequest)
@@ -73,7 +79,7 @@ func EndInstantMeeting(w http.ResponseWriter, r *http.Request) {
 	// Update status to 'completed'. 
 	// Security: Eq("user_id", userID) ensures ONLY the host who created it can end it!
 	var results []interface{}
-	err := database.SupaClient.DB.From("meetings").Update(map[string]interface{}{
+	err := authClient.DB.From("meetings").Update(map[string]interface{}{
 		"status": "completed",
 	}).Eq("id", req.ID).Eq("user_id", userID).Execute(&results)
 
