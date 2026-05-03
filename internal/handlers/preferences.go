@@ -31,8 +31,11 @@ func GetTheme(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token := r.Context().Value(AuthTokenKey).(string)
+	authClient := database.CreateAuthenticatedClient(token)
+
 	var results []PreferenceRow
-	err := database.SupaClient.DB.From("preferences").Select("theme").Eq("user_id", userID).Execute(&results)
+	err := authClient.DB.From("preferences").Select("theme").Eq("user_id", userID).Execute(&results)
 
 	if err != nil {
 		fmt.Println("🚨 SUPABASE GET THEME ERROR:", err)
@@ -64,6 +67,9 @@ func SaveTheme(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token := r.Context().Value(AuthTokenKey).(string)
+	authClient := database.CreateAuthenticatedClient(token)
+
 	var req ThemeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error": "Invalid JSON payload"}`, http.StatusBadRequest)
@@ -77,7 +83,7 @@ func SaveTheme(w http.ResponseWriter, r *http.Request) {
 
 	// Upsert: Update if exists, Insert if new
 	var results []interface{}
-	err := database.SupaClient.DB.From("preferences").Upsert(map[string]interface{}{
+	err := authClient.DB.From("preferences").Upsert(map[string]interface{}{
 		"user_id": userID,
 		"theme":   req.Theme,
 	}).Execute(&results)

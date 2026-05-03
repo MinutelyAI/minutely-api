@@ -11,7 +11,10 @@ import (
 )
 
 type contextKey string
-const UserIDKey contextKey = "userID"
+const (
+	UserIDKey contextKey = "userID"
+	AuthTokenKey contextKey = "authToken"
+)
 
 type Meeting struct {
 	ID           string    `json:"id"`
@@ -37,10 +40,13 @@ func GetNextMeeting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token := r.Context().Value(AuthTokenKey).(string)
+	authClient := database.CreateAuthenticatedClient(token)
+
 	var results []Meeting
 	
 	// Fetch all scheduled meetings for this user without relying on library sorting
-	err := database.SupaClient.DB.From("meetings").Select("*").Eq("user_id", userID).Eq("status", "scheduled").Execute(&results)
+	err := authClient.DB.From("meetings").Select("*").Eq("user_id", userID).Eq("status", "scheduled").Execute(&results)
 
 	if err != nil {
 		fmt.Println("🚨 SUPABASE GET MEETING ERROR:", err)
@@ -79,10 +85,13 @@ func StartInstantMeeting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token := r.Context().Value(AuthTokenKey).(string)
+	authClient := database.CreateAuthenticatedClient(token)
+
 	defaultTitle := "Instant Meeting - " + time.Now().Format("Jan 02, 3:04 PM")
 
 	var results []Meeting
-	err := database.SupaClient.DB.From("meetings").Insert(map[string]interface{}{
+	err := authClient.DB.From("meetings").Insert(map[string]interface{}{
 		"user_id":       userID,
 		"title":         defaultTitle,
 		"status":        "in_progress",
@@ -117,10 +126,13 @@ func GetRecentMeetings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token := r.Context().Value(AuthTokenKey).(string)
+	authClient := database.CreateAuthenticatedClient(token)
+
 	var results []Meeting
 	
 	// Fetch all completed meetings
-	err := database.SupaClient.DB.From("meetings").Select("*").Eq("user_id", userID).Eq("status", "completed").Execute(&results)
+	err := authClient.DB.From("meetings").Select("*").Eq("user_id", userID).Eq("status", "completed").Execute(&results)
 
 	if err != nil {
 		fmt.Println("🚨 SUPABASE RECENT MEETINGS ERROR:", err)

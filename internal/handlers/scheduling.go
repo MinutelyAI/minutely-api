@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/MinutelyAI/minutely-api/internal/database"
+	"github.com/google/uuid"
 )
 
 // Request Models
@@ -51,6 +52,8 @@ func CreateScheduledMeeting(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := r.Context().Value(UserIDKey).(string)
+	token := r.Context().Value(AuthTokenKey).(string)
+	authClient := database.CreateAuthenticatedClient(token)
 
 	var req ScheduleMeetingReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Title == "" || req.ScheduledFor == "" {
@@ -58,23 +61,25 @@ func CreateScheduledMeeting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 1. Insert the meeting
-	var insertedMeetings []map[string]interface{}
-	err := database.SupaClient.DB.From("meetings").Insert(map[string]interface{}{
+	meetingID := uuid.New().String()
+	meetingData := map[string]interface{}{
+		"id":            meetingID,
 		"user_id":       userID,
 		"title":         req.Title,
 		"description":   req.Description,
 		"status":        "scheduled",
 		"scheduled_for": req.ScheduledFor,
-	}).Execute(&insertedMeetings)
+	}
 
-	if err != nil || len(insertedMeetings) == 0 {
+	// 1. Insert the meeting
+	var insertedMeetings []map[string]interface{}
+	err := authClient.DB.From("meetings").Insert(meetingData).Execute(&insertedMeetings)
+
+	if err != nil {
 		fmt.Println("🚨 SUPABASE CREATE MEETING ERROR:", err)
 		http.Error(w, `{"error": "Failed to schedule meeting"}`, http.StatusInternalServerError)
 		return
 	}
-
-	meetingID := insertedMeetings[0]["id"].(string)
 
 	// 2. Insert participants (if any)
 	cleanParticipants := uniqueEmails(req.Participants)
@@ -88,7 +93,7 @@ func CreateScheduledMeeting(w http.ResponseWriter, r *http.Request) {
 		}
 		
 		// Bulk insert participants
-		err = database.SupaClient.DB.From("meeting_participants").Insert(participantsData).Execute(nil)
+		err = authClient.DB.From("meeting_participants").Insert(participantsData).Execute(nil)
 		if err != nil {
 			fmt.Println("🚨 SUPABASE PARTICIPANT INSERT ERROR:", err)
 			// Non-fatal error: The meeting was created, but invites failed.
@@ -97,7 +102,7 @@ func CreateScheduledMeeting(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "Meeting scheduled successfully",
-		"meeting": insertedMeetings[0],
+		"meeting": meetingData,
 		"invited": len(cleanParticipants),
 	})
 }
@@ -111,15 +116,17 @@ func UpdateScheduledMeeting(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := r.Context().Value(UserIDKey).(string)
+	token := r.Context().Value(AuthTokenKey).(string)
+	authClient := database.CreateAuthenticatedClient(token)
 	var req UpdateMeetingReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ID == "" {
 		http.Error(w, `{"error": "Meeting ID is required"}`, http.StatusBadRequest)
 		return
 	}
 
-	// Update the meeting (Supabase RLS is bypassed by Service Role, so we MUST enforce Eq("user_id", userID))
+	// Update the meeting (RLS enforced via authClient)
 	var results []interface{}
-	err := database.SupaClient.DB.From("meetings").Update(map[string]interface{}{
+	err := authClient.DB.From("meetings").Update(map[string]interface{}{
 		"title":         req.Title,
 		"description":   req.Description,
 		"scheduled_for": req.ScheduledFor,
@@ -142,6 +149,8 @@ func CancelScheduledMeeting(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := r.Context().Value(UserIDKey).(string)
+	token := r.Context().Value(AuthTokenKey).(string)
+	authClient := database.CreateAuthenticatedClient(token)
 	var req CancelMeetingReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ID == "" {
 		http.Error(w, `{"error": "Meeting ID is required"}`, http.StatusBadRequest)
@@ -150,7 +159,7 @@ func CancelScheduledMeeting(w http.ResponseWriter, r *http.Request) {
 
 	// Mark status as 'canceled'
 	var results []interface{}
-	err := database.SupaClient.DB.From("meetings").Update(map[string]interface{}{
+	err := authClient.DB.From("meetings").Update(map[string]interface{}{
 		"status": "canceled",
 	}).Eq("id", req.ID).Eq("user_id", userID).Execute(&results)
 
