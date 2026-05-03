@@ -23,8 +23,12 @@ func ValidateMeeting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token := r.Context().Value(AuthTokenKey).(string)
+	authClient := database.CreateAuthenticatedClient(token)
+
 	var results []map[string]interface{}
-	err := database.SupaClient.DB.From("meetings").Select("id,title,status,scheduled_for").Eq("id", meetingID).Execute(&results)
+	// Use RPC to bypass RLS for validation so guests with the link can see basic info
+	err := authClient.DB.Rpc("get_meeting_by_id", map[string]interface{}{"m_id": meetingID}).Execute(&results)
 
 	if err != nil {
 		fmt.Println("🚨 SUPABASE VALIDATE MEETING ERROR:", err)
