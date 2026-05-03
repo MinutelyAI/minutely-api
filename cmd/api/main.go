@@ -85,7 +85,7 @@ func main() {
 	mux.HandleFunc("/api/meetings/end", handlers.RequireAuth(handlers.EndInstantMeeting))
 
 	// Join Meeting Validation
-	mux.HandleFunc("/api/meetings/validate", handlers.ValidateMeeting)
+	mux.HandleFunc("/api/meetings/validate", handlers.RequireAuth(handlers.ValidateMeeting))
 
 	// Media State Sync
 	mux.HandleFunc("/api/meetings/participant/state", handlers.RequireAuth(handlers.UpdateMediaState))
